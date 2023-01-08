@@ -5,19 +5,7 @@
 
 void ExportPython::addFunction(std::string functionName, std::string functionBody, std::vector<std::string> parameters)
 {
-	using namespace std::string_literals;
-	// Prepare function declaration
-	functionName.insert(0, "def "s, 0, 4);
-	functionName.push_back('(');
-	size_t index{ 0 };
-	for (auto& parameter : parameters) {
-		functionName.insert(functionName.end(), std::begin(parameter), std::end(parameter));
-		if (++index != parameters.size()) {
-			functionName.push_back(',');
-		}
-	}
-	functionName.insert(functionName.size(), "):"s);
-	pythonCodeLines.push_back(std::move(functionName));
+	pythonCodeLines.push_back(prepareFunctionTitle(functionName, parameters));
 
 	// Prepare function body
 	std::stringstream functionBodyStream{ functionBody };
@@ -25,6 +13,17 @@ void ExportPython::addFunction(std::string functionName, std::string functionBod
 	{
 		functionBody.insert(0, " ");
 		pythonCodeLines.push_back(std::move(functionBody));
+	}
+}
+
+void ExportPython::addFunction(std::string functionName, std::vector<std::string> functionBody, std::vector<std::string> parameters)
+{
+	pythonCodeLines.push_back(prepareFunctionTitle(functionName, parameters));
+
+	// Prepare function body
+	for (auto& line : functionBody) {
+		line.insert(0, " ");
+		pythonCodeLines.push_back(std::move(line));
 	}
 }
 
@@ -42,16 +41,7 @@ void ExportPython::addCodeLines(std::vector<std::string> lines)
 
 void ExportPython::writeFile(const std::string& fileName)
 {
-	std::ofstream pythonFile{ fileName };
-
-	if (!pythonFile) {
-		std::cerr << fileName << " could not be opened for writing!\n";
-		return;
-	}
-
-	for (auto& line : pythonCodeLines) {
-		pythonFile << line << '\n';
-	}
+	writeCodeToFile(fileName, std::move(pythonCodeLines));
 
 	pythonCodeLines.clear();
 }
@@ -66,4 +56,36 @@ void ExportPython::writeCodeToFile(const std::string& fileName, std::string code
 	}
 
 	pythonFile << code;
+}
+
+void ExportPython::writeCodeToFile(const std::string& fileName, std::vector<std::string> code)
+{
+	std::ofstream pythonFile{ fileName };
+
+	if (!pythonFile) {
+		std::cerr << fileName << " could not be opened for writing!\n";
+		return;
+	}
+
+	for (auto& line : code) {
+		pythonFile << line << '\n';
+	}
+}
+
+std::string ExportPython::prepareFunctionTitle(std::string functionName, const std::vector<std::string>& parameters)
+{
+	using namespace std::string_literals;
+	// Prepare function declaration
+	functionName.insert(0, "def "s, 0, 4);
+	functionName.push_back('(');
+	size_t index{ 0 };
+	for (auto& parameter : parameters) {
+		functionName.insert(functionName.end(), std::begin(parameter), std::end(parameter));
+		if (++index != parameters.size()) {
+			functionName.push_back(',');
+		}
+	}
+	functionName.insert(functionName.size(), "):"s);
+
+	return functionName;
 }
